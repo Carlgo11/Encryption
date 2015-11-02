@@ -3,7 +3,7 @@
 class Encryption {
 
     public static function decrypt($encrypted, $password, $salt = null) {
-        $key = hash(Config::getData("algorithm"), $salt . $password, true);
+        $key = hash(Config::getData("encryption", "algorithm"), $salt . $password, true);
         $iv = base64_decode(substr($encrypted, 0, 22) . '==');
         $encrypted = substr($encrypted, 22);
         $decrypted = rtrim(mcrypt_decrypt(MCRYPT_RIJNDAEL_128, $key, base64_decode($encrypted), MCRYPT_MODE_CBC, $iv), "\0\4");
@@ -16,7 +16,7 @@ class Encryption {
     }
 
     public static function encrypt($decrypted, $password, $salt = null) {
-        $key = hash(Config::getData("algorithm"), $salt . $password, true);
+        $key = hash(Config::getData("encryption", "algorithm"), $salt . $password, true);
         srand();
         $iv = mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_128, MCRYPT_MODE_CBC), MCRYPT_RAND);
         if (strlen($iv_base64 = rtrim(base64_encode($iv), '=')) != 22) {
@@ -28,18 +28,17 @@ class Encryption {
 
     public static function generateHash($password, $salt) {
         for ($i = Config::getData("hashing", "start_cost"); $i < 31; $i++) {
-        $options = ['cost' => $i];
-        $start = microtime(true);
-        $hash = password_hash($password.$salt, PASSWORD_BCRYPT, $options);
-        $end = microtime(true);
-         if (($end - $start) * 1000 > Config::getData("hashing", "min_time")) {
-            return $hash;
+            $options = ['cost' => $i];
+            $start = microtime(true);
+            $hash = password_hash($password . $salt, PASSWORD_BCRYPT, $options);
+            $end = microtime(true);
+            if (($end - $start) * 1000 > Config::getData("hashing", "min_time")) {
+                return $hash;
+            }
         }
-        }
-       
     }
-    
-    public static function verifyHash($password, $hash){
+
+    public static function verifyHash($password, $hash) {
         return password_verify($password, $hash);
     }
 
@@ -47,4 +46,5 @@ class Encryption {
         $length = Config::getData($section, "salt_length");
         return openssl_random_pseudo_bytes($length);
     }
+
 }
